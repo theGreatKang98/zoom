@@ -45,23 +45,33 @@ function handleWelcomeSubmit(event) {
   event.preventDefault();
   roomName = welcomeForm.querySelector("#room-name").value;
   nickname = welcomeForm.querySelector("#nickname").value;
-  socket.emit("enter_room", roomName, showRoom);
   socket.emit("nickname", nickname);
+  socket.emit("enter_room", roomName, showRoom);
 }
 
 welcomeForm.addEventListener("submit", handleWelcomeSubmit);
 
 // nicknameFrom.addEventListener('submit',handleNicknameSubmit);
 
-socket.on("welcome", () => {
-  addMessage("someone joined!");
+socket.on("welcome", (user) => {
+  addMessage(`${user} joined`);
 });
 
-socket.on("bye", () => {
-  addMessage("someone left ㅠㅠ");
+socket.on("bye", (user) => {
+  addMessage(`${user} left`);
 });
 
+socket.on('room_change',(list)=>{
+  const ul = welcome.querySelector("ul");
+  ul.innerHTML = '';
+  list.forEach((i)=>{
+    const li = document.createElement("li");
+    console.log(li);
+    li.innerHTML = i;
+    ul.append(li);
+  });
+})
 
 
-socket.on("new_message",(msg)=> {addMessage(msg)}); //addMessage
+socket.on("new_message",(addMessage)); //addMessage
 socket.on("new_message",()=>{console.log('new msg receive')}); //addMessage
