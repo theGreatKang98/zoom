@@ -1,43 +1,67 @@
-const messageList = document.querySelector("ul");
-const nickForm = document.querySelector("#nick");
-const messageForm = document.querySelector("#message");
-const socket = new WebSocket(`ws://${window.location.host}`);
+const socket = io();
 
-function makeMessage(type, payload) {
-  const msg = { type, payload };
-  console.log(msg);
-  return JSON.stringify(msg);
-}
+const welcome = document.getElementById("welcome");
+const welcomeForm = welcome.querySelector("form");
+const room = document.getElementById("room");
+const msgForm = room.querySelector('form');
 
-function handleOpen() {
-  console.log("Connected to Server ✅");
-}
 
-socket.addEventListener("open", handleOpen);
+room.hidden = true;
 
-socket.addEventListener("message", (message) => {
+let roomName;
+let nickname;
+
+function addMessage(message) {
+  console.log('addMsg');
+  const ul = room.querySelector("ul");
   const li = document.createElement("li");
-  li.innerText = message.data;
-  messageList.append(li);
-});
-
-socket.addEventListener("close", () => {
-  console.log("Disconnected from Server ❌");
-});
-
-function handleSubmit(event) {
-  event.preventDefault();
-  const input = messageForm.querySelector("input");
-  socket.send(makeMessage("new_message", input.value));
-  input.value = "";
+  li.innerText = message;
+  ul.appendChild(li);
 }
 
-function handleNickSubmit(event) {
+function handleMessageSubmit(event) {
   event.preventDefault();
-  const input = nickForm.querySelector("input");
-  socket.send(makeMessage("nickname", input.value));
-  input.value = "";
+  const msgInput = room.querySelector("input");
+  const value = msgInput.value;
+  socket.emit("new_message", value, roomName, () => {
+    addMessage(`You: ${value}`);
+  });
+  msgInput.value = "";
 }
 
-messageForm.addEventListener("submit", handleSubmit);
-nickForm.addEventListener("submit", handleNickSubmit);
+
+function showRoom() {
+  welcome.hidden = true;
+  room.hidden = false;
+  const h3 = room.querySelector("h3");
+  const h4 = room.querySelector("h4");
+  h3.innerText = `Room ${roomName}`;
+  h4.innerText = `${nickname}`;
+  const msgForm = room.querySelector("form");
+  msgForm.addEventListener("submit", handleMessageSubmit);
+}
+
+function handleWelcomeSubmit(event) {
+  event.preventDefault();
+  roomName = welcomeForm.querySelector("#room-name").value;
+  nickname = welcomeForm.querySelector("#nickname").value;
+  socket.emit("enter_room", roomName, showRoom);
+  socket.emit("nickname", nickname);
+}
+
+welcomeForm.addEventListener("submit", handleWelcomeSubmit);
+
+// nicknameFrom.addEventListener('submit',handleNicknameSubmit);
+
+socket.on("welcome", () => {
+  addMessage("someone joined!");
+});
+
+socket.on("bye", () => {
+  addMessage("someone left ㅠㅠ");
+});
+
+
+
+socket.on("new_message",(msg)=> {addMessage(msg)}); //addMessage
+socket.on("new_message",()=>{console.log('new msg receive')}); //addMessage
