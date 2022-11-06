@@ -7,8 +7,8 @@ const app = express();
 app.set("view engine", "pug");
 app.set("views", __dirname + "/views");
 app.use("/public", express.static(__dirname + "/public"));
-app.get("/", (_, res) => res.render("home"));
-app.get("/*", (_, res) => res.redirect("/"));
+app.get("/", (req, res) => res.render("home"));
+app.get("/*", (req, res) => res.redirect("/"));
 
 const httpServer = http.createServer(app);
 const wsServer = SocketIO(httpServer);
@@ -28,8 +28,8 @@ function publicRooms() {
   return publicRooms;
 }
 
-const countRoom = (roomName)=>{
-   return wsServer.sockets.adapter.rooms.get(roomName)?.size;
+const countRoom = (roomName) => {
+  return wsServer.sockets.adapter.rooms.get(roomName)?.size;
 }
 
 wsServer.on("connection", (socket) => {
@@ -41,7 +41,7 @@ wsServer.on("connection", (socket) => {
     socket.join(roomName);
     done(countRoom(roomName));
     socket.to(roomName).emit("welcome", socket.nickname, countRoom(roomName));
-    wsServer.sockets.emit("room_change", publicRooms(),countRoom(roomName));
+    wsServer.sockets.emit("room_change", publicRooms(), countRoom(roomName));
   });
   socket.on("disconnecting", () => {
     socket.rooms.forEach((room) =>
@@ -56,6 +56,13 @@ wsServer.on("connection", (socket) => {
     done();
   });
   socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
+
+  socket.on('offer', (offer, roomName) => {
+    socket.to(roomName).emit('offer', offer);
+  })
+  socket.on('answer',(answer, roomName) => {
+    socket.to(roomName).emit('answer', answer)
+  })
 });
 
 
