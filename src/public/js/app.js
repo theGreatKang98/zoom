@@ -18,7 +18,6 @@ let myPeerConnection;
 
 
 function addMessage(message) {
-  console.log('addMsg');
   const ul = room.querySelector("ul");
   const li = document.createElement("li");
   li.innerText = message;
@@ -34,7 +33,7 @@ async function showRoom(count) {
   h3.innerText = `Room ${roomName} (${count})`;
   h4.innerText = `${nickname}`;
   const msgForm = room.querySelector("form");
-  msgForm.addEventListener("submit", handleMessageSubmit); 
+  msgForm.addEventListener("submit", handleMessageSubmit);
 }
 
 async function handleWelcomeSubmit(event) {
@@ -57,7 +56,7 @@ socket.on("welcome", async (user) => {
   myPeerConnection.setLocalDescription(offer);
   socket.emit('offer', offer, roomName);
 });
-socket.on('offer',async (offer) =>{
+socket.on('offer', async (offer) => {
   myPeerConnection.setRemoteDescription(offer);
   const answer = await myPeerConnection.createAnswer();
   myPeerConnection.setLocalDescription(answer);
@@ -109,10 +108,21 @@ async function getMedia() {
 
 async function makeConnection() {
   myPeerConnection = new RTCPeerConnection();
+  myPeerConnection.addEventListener('icecandidate', (data) => {
+    socket.emit('ice', data.candidate, roomName);
+  })
+  myPeerConnection.addEventListener('addstream',(data)=>{
+    const peerStream = document.getElementById('peerFace');
+    peerStream.srcObject = data.stream;
+  })
   myStream
     .getTracks()
     .forEach(i => myPeerConnection.addTrack(i, myStream));
 }
+
+socket.on('ice', ice => {
+  myPeerConnection.addIceCandidate(ice);
+})
 
 muteBtn.addEventListener('click', () => {
   myStream
